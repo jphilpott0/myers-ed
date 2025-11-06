@@ -1,8 +1,10 @@
 # myers-ed:
 
 <div align="center">
+
 ![Rust](https://img.shields.io/badge/Rust-CE422B?style=for-the-badge&logo=rust&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen?style=for-the-badge)
+
 </div>
 
 WIP Rust implementation of Myers bit-parallel edit distance algorithm.
