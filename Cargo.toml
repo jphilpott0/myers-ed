@@ -6,6 +6,13 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.100"
 
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+name = "bench"
+harness = false
+
 [features]
 avx512 = []
 
