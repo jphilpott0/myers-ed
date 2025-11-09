@@ -71,7 +71,7 @@ pub fn myers_ed_single_avx512_with_peq(peq: SingleWordPeq<__m512i>, b: &[u8]) ->
 
             // Calculate diagonal zero delta bit-vector. This is d0 = (((eq & vp) + vp) ^ vp) | eq.
             let d0 = _mm512_ternarylogic_epi64(
-                _mm512_add_si512_custom(_mm512_and_si512(eq, vp), vp),
+                _mm512_add_si512_custom::<1>(_mm512_and_si512(eq, vp), vp),
                 vp,
                 eq,
                 0xBE,
@@ -118,7 +118,15 @@ pub fn myers_ed_single_avx512_with_peq(peq: SingleWordPeq<__m512i>, b: &[u8]) ->
 pub mod plumbing {
     use super::*;
 
-    /// Add two `_m512i` as if they were both one-lane 512-bit integers.
+    /// Add two `_m512i` as if they were both one-lane 512-bit integers. Accepts a
+    /// compile-time hint about the number of expected carries between lanes there
+    /// might be (`LIKELY_CARRY_ROUNDS`). The operation works with 64-bit lanes, meaning
+    /// if any lane of the sum of `a` and `b` overflows, we must carry a bit into the next
+    /// lane. We do this in a number of carry rounds. If you expect that carrying between
+    /// lanes is unlikely, then provide a hint of `LIKELY_CARRY_ROUNDS = 0`. Otherwise,
+    /// provide `LIKELY_CARRY_ROUNDS = 1`. It is extremely unlikely that you would ever
+    /// expect more than 1 carry round to be necessary. This hint can remove some
+    /// checks and slightly improve performance.
     ///
     /// # Examples
     ///
@@ -130,7 +138,7 @@ pub mod plumbing {
     /// let b: __m512i = unsafe { core::mem::transmute::<[i64; 8], _>([1, 0, 0, 0, 0, 0, 0, -1]) };
     ///
     /// let s1: __m512i = unsafe { core::mem::transmute::<[i64; 8], _>([2, 0, 0, 0, 0, 0, 1, 0]) };
-    /// let s2: __m512i = _mm512_add_si512_custom(a, b);
+    /// let s2: __m512i = _mm512_add_si512_custom::<1>(a, b);
     /// # // __m512i doesn't implement PartialEq, so quietly transmute back to arrays.
     /// # let s1: [i64; 8] = unsafe { core::mem::transmute::<__m512i, _>(s1)};
     /// # let s2: [i64; 8] = unsafe { core::mem::transmute::<__m512i, _>(s2)};
@@ -139,22 +147,33 @@ pub mod plumbing {
     /// # }
     /// ```
     #[inline(always)]
-    pub fn _mm512_add_si512_custom(a: __m512i, b: __m512i) -> __m512i {
+    pub fn _mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(
+        a: __m512i,
+        b: __m512i,
+    ) -> __m512i {
         // Safety
         //
         // The `avx512f` `target_feature` must be available.
         #[inline(always)]
-        unsafe fn __inner_mm512_add_si512_custom(mut a: __m512i, b: __m512i) -> __m512i {
+        unsafe fn __inner_mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(
+            mut a: __m512i,
+            b: __m512i,
+        ) -> __m512i {
             // Add a and b together as 64-bit lanes without carry between.
             let mut s = _mm512_add_epi64(a, b);
 
-            // Mask of carry bits. If s < a, then we overflowed and need a carry bit.
-            let mut cm = _mm512_cmp_epu64_mask(s, a, _MM_CMPINT_LT);
+            // Initalise carry mask. Since 0..=LIKELY_CARRY_ROUNDS must always run once, we
+            // will always populate the carry mask with some data.
+            #[allow(unused_assignments)]
+            let mut cm = 0;
 
-            // Loop while we have carry bits to add. Use a do-while pattern here. One round of carrying
-            // is common, so we always try once. Further rounds are exceedingly unlikely but supported
-            // for correctness. See notes below for more.
-            loop {
+            // Perform `LIKELY_CARRY_ROUNDS` of unchecked non-branching carry rounds. When
+            // `LIKELY_CARRY_ROUNDS` is small, LLVM can unroll this loop since its a `const`
+            // generic and known at compile-time.
+            for _ in 0..LIKELY_CARRY_ROUNDS {
+                // Mask of carry bits. If s < a, then we overflowed and need a carry bit.
+                cm = _mm512_cmp_epu64_mask(s, a, _MM_CMPINT_LT);
+
                 // Broadcast carry bits across lanes. Right shift mask to propagate bits up along lanes.
                 //
                 // Safety: `rhs = 1 < 8 * std::mem::size_of::<u8>()`.
@@ -165,7 +184,11 @@ pub mod plumbing {
 
                 // Add carry bits into s.
                 s = _mm512_add_epi64(s, cb);
+            }
 
+            // Loop indefinitely doing checked carry rounds until we have no more carries to do.
+            // If `LIKELY_CARRY_ROUNDS` was a good hint, then we hope to return immediately.
+            loop {
                 // Check if we had any more overflows and need to do more carry logic.
                 cm = _mm512_cmp_epu64_mask(s, a, _MM_CMPINT_LT);
 
@@ -186,19 +209,31 @@ pub mod plumbing {
                 // is almost zero (1 in 2^64 chance). Nevertheless, for the edge-case of the first iteration,
                 // and the insanely low chance thereafter, we need to handle further carry rounds for
                 // correctness. However, since its so rare, we hint the branch predictor that it's unlikely
-                // to happen. It may already detect this dynamically, but this is a nice compile-time
-                // micro-optimisation.
+                // to happen. It probably will already detect this dynamically, but this is a nice compile-time
+                // micro-optimisation that saves the branch predictor some time.
                 if core::hint::likely(cm == 0) {
-                    break;
+                    return s;
                 }
-            }
 
-            s
+                // If the `LIKELY_CARRY_ROUNDS` hint was bad, and we still have carries to
+                // propagate, then continue propagating.
+
+                // Broadcast carry bits across lanes. Right shift mask to propagate bits up along lanes.
+                //
+                // Safety: `rhs = 1 < 8 * std::mem::size_of::<u8>()`.
+                let cb = unsafe { _mm512_maskz_set1_epi64(cm.unchecked_shr(1), 1_i64) };
+
+                // Save current pre-carry lanes.
+                a = s;
+
+                // Add carry bits into s.
+                s = _mm512_add_epi64(s, cb);
+            }
         }
 
         // Safety: We guarantee that the avx512f target_feature
         // is available when the avx512 crate feature compiles.
-        unsafe { __inner_mm512_add_si512_custom(a, b) }
+        unsafe { __inner_mm512_add_si512_custom::<LIKELY_CARRY_ROUNDS>(a, b) }
     }
 
     // Trick to evaluate a `const` context that doesn't cause a well-formedness check cycle.
