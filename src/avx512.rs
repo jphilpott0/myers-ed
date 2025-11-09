@@ -126,8 +126,8 @@ pub mod plumbing {
     /// lanes is unlikely, for instance when one of `a` or `b` is very small, then provide
     /// a hint of `LIKELY_CARRY_ROUNDS = 0`. Otherwise, or if you are unsure, provide
     /// `LIKELY_CARRY_ROUNDS = 1`. It is extremely unlikely that you would ever expect more
-    /// than 1 carry round. Providing this hint removes the need for some checks and slightly
-    /// improves performance.
+    /// than `1` carry round. Providing this hint removes the need for some checks and
+    /// slightly improves performance.
     ///
     /// # Examples
     ///
@@ -400,6 +400,8 @@ mod tests {
 
     #[test]
     fn test() {
-        let _ = myers_ed_single_avx512(b"AATTC", b"AATCC");
+        let d = myers_ed_single_avx512(b"AATTC", b"AATTCA");
+
+        assert_eq!(d, 1);
     }
 }
