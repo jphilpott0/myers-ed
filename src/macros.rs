@@ -24,7 +24,7 @@ macro_rules! assert_target_features {
             // If we don't have all the target_features required for a crate feature, then compile
             // this compile-time error.
             compile_error!(concat!(
-                "Crate feature `", stringify!($feature), "` requires enabled target features: ",
+                "Crate feature ", stringify!($feature), " requires enabled target features: ",
                 stringify!($( $tf ),+),
             ));
         };
