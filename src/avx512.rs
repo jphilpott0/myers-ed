@@ -101,7 +101,7 @@ pub fn myers_ed_single_avx512_with_peq(peq: SingleWordPeq<__m512i>, b: &[u8]) ->
         // for `l = peq.len()`.
         //
         // Safety: `peq.len()` must be `<=512`, which is guaranteed by `SingleWordPeq`.
-        let m = unsafe { _mm512_mask_upto_epi64_custom(peq.len()) };
+        let m = unsafe { _mm512_mask_upto_si512_custom(peq.len()) };
 
         // Compute final edit distance.
         let vp_popcnt = _mm512_popcnt_si512_custom(_mm512_and_si512(vp, m)) as usize;
@@ -292,13 +292,13 @@ pub mod plumbing {
     ///
     /// ```
     /// # use core::arch::x86_64::*;
-    /// # use myers_ed::avx512::plumbing::_mm512_mask_upto_epi64_custom;
+    /// # use myers_ed::avx512::plumbing::_mm512_mask_upto_si512_custom;
     /// # fn main() {
     /// // Note that memory-layout is little-endian.
     /// let m1: __m512i = unsafe { core::mem::transmute::<[i64; 8], _>([255, 0, 0, 0, 0, 0, 0, 0]) };
     ///
     /// // Safety: 8 < 512.
-    /// let m2: __m512i = unsafe { _mm512_mask_upto_epi64_custom(8) };
+    /// let m2: __m512i = unsafe { _mm512_mask_upto_si512_custom(8) };
     /// # // __m512i doesn't implement PartialEq, so quietly transmute back to arrays.
     /// # let m1: [i64; 8] = unsafe { core::mem::transmute::<__m512i, _>(m1)};
     /// # let m2: [i64; 8] = unsafe { core::mem::transmute::<__m512i, _>(m2)};
@@ -311,7 +311,7 @@ pub mod plumbing {
     ///
     /// `i` must not be greater than 512. Otherwise, this is UB.
     #[inline(always)]
-    pub unsafe fn _mm512_mask_upto_epi64_custom(i: usize) -> __m512i {
+    pub unsafe fn _mm512_mask_upto_si512_custom(i: usize) -> __m512i {
         // Lane containing intended MSB. 1_u8 << (i / 64).
         let lane = 1_u8.unchecked_shl(i.unchecked_shr(6) as u32);
 
