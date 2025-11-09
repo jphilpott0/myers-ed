@@ -11,6 +11,7 @@
 
 pub mod avx512;
 pub mod peq;
+pub mod prelude;
 pub mod scalar;
 
 pub(crate) mod macros;
