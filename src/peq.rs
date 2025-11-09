@@ -134,7 +134,7 @@ impl<T> Index<usize> for SingleWordPeq<T> {
 
 /// Crate private implementation of IndexMut because we don't want to leak
 /// access to inner slice to users to guarantee correctness of the .len value.
-pub(crate) mod __private_index_mut {
+pub(super) mod __private_index_mut {
     use super::*;
     use core::ops::IndexMut;
 
