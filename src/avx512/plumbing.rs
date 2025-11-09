@@ -1,4 +1,4 @@
-//! Custom AVX-512 helper "intrinsics" for supporting the Myers algorithm implementation.
+//! Custom AVX-512 "helper intrinsics" for supporting the Myers algorithm implementation.
 
 use core::arch::x86_64::*;
 use core::ops::BitAnd;
