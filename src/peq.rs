@@ -62,6 +62,7 @@ impl Word for __m512i {
     }
 }
 
+#[repr(align(64))]
 pub struct SingleWordPeq<T> {
     peq: [T; 256],
     len: usize,
