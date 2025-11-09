@@ -123,10 +123,11 @@ pub mod plumbing {
     /// might be (`LIKELY_CARRY_ROUNDS`). The operation works with 64-bit lanes, meaning
     /// if any lane of the sum of `a` and `b` overflows, we must carry a bit into the next
     /// lane. We do this in a number of carry rounds. If you expect that carrying between
-    /// lanes is unlikely, then provide a hint of `LIKELY_CARRY_ROUNDS = 0`. Otherwise,
-    /// provide `LIKELY_CARRY_ROUNDS = 1`. It is extremely unlikely that you would ever
-    /// expect more than 1 carry round to be necessary. This hint can remove some
-    /// checks and slightly improve performance.
+    /// lanes is unlikely, for instance when one of `a` or `b` is very small, then provide
+    /// a hint of `LIKELY_CARRY_ROUNDS = 0`. Otherwise, or if you are unsure, provide
+    /// `LIKELY_CARRY_ROUNDS = 1`. It is extremely unlikely that you would ever expect more
+    /// than 1 carry round. Providing this hint removes the need for some checks and slightly
+    /// improves performance.
     ///
     /// # Examples
     ///
@@ -168,8 +169,8 @@ pub mod plumbing {
             let mut cm = 0;
 
             // Perform `LIKELY_CARRY_ROUNDS` of unchecked non-branching carry rounds. When
-            // `LIKELY_CARRY_ROUNDS` is small, LLVM can unroll this loop since its a `const`
-            // generic and known at compile-time. If `LIKELY_CARRY_ROUNDS = 0`, then LLVM
+            // `LIKELY_CARRY_ROUNDS` is small, llvm can unroll this loop since its a `const`
+            // generic and known at compile-time. If `LIKELY_CARRY_ROUNDS = 0`, then llvm
             // will exclude the loop entirely.
             for _ in 0..LIKELY_CARRY_ROUNDS {
                 // Mask of carry bits. If s < a, then we overflowed and need a carry bit.
