@@ -169,7 +169,8 @@ pub mod plumbing {
 
             // Perform `LIKELY_CARRY_ROUNDS` of unchecked non-branching carry rounds. When
             // `LIKELY_CARRY_ROUNDS` is small, LLVM can unroll this loop since its a `const`
-            // generic and known at compile-time.
+            // generic and known at compile-time. If `LIKELY_CARRY_ROUNDS = 0`, then LLVM
+            // will exclude the loop entirely.
             for _ in 0..LIKELY_CARRY_ROUNDS {
                 // Mask of carry bits. If s < a, then we overflowed and need a carry bit.
                 cm = _mm512_cmp_epu64_mask(s, a, _MM_CMPINT_LT);
@@ -231,8 +232,7 @@ pub mod plumbing {
             }
         }
 
-        // Safety: We guarantee that the avx512f target_feature
-        // is available when the avx512 crate feature compiles.
+        // Safety: We guarantee that the avx512f target_feature is available when the avx512 crate feature compiles.
         unsafe { __inner_mm512_add_si512_custom::<LIKELY_CARRY_ROUNDS>(a, b) }
     }
 
