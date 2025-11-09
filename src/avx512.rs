@@ -33,7 +33,7 @@ pub fn myers_ed_single_avx512(a: &[u8], b: &[u8]) -> usize {
     // Infallible: we've verified a.len() <= 512.
     let peq = SingleWordPeq::from_bytes(a);
 
-    myers_ed_single_avx512_with_peq(peq, b)
+    myers_ed_single_avx512_with_peq(&peq, b)
 }
 
 pub fn try_myers_ed_single_avx512(a: &[u8], b: &[u8]) -> Result<usize> {
@@ -44,16 +44,16 @@ pub fn try_myers_ed_single_avx512(a: &[u8], b: &[u8]) -> Result<usize> {
     // Infallible: we've verified a.len() <= 512.
     let peq = SingleWordPeq::from_bytes(a);
 
-    Ok(myers_ed_single_avx512_with_peq(peq, b))
+    Ok(myers_ed_single_avx512_with_peq(&peq, b))
 }
 
-pub fn myers_ed_single_avx512_with_peq(peq: SingleWordPeq<__m512i>, b: &[u8]) -> usize {
+pub fn myers_ed_single_avx512_with_peq(peq: &SingleWordPeq<__m512i>, b: &[u8]) -> usize {
     // Safety
     //
     // The `avx512f` and `avx512vpopcntdq `target_features` must be available.
     #[inline(always)]
     unsafe fn __inner_myers_ed_single_avx512_with_peq(
-        peq: SingleWordPeq<__m512i>,
+        peq: &SingleWordPeq<__m512i>,
         b: &[u8],
     ) -> usize {
         // Vertical positive delta bit-vector.

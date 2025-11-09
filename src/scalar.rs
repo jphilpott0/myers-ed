@@ -24,7 +24,7 @@ pub fn myers_ed_single_scalar(a: &[u8], b: &[u8]) -> usize {
 
     let peq = SingleWordPeq::from_bytes(a);
 
-    myers_ed_single_scalar_with_peq(peq, b)
+    myers_ed_single_scalar_with_peq(&peq, b)
 }
 
 pub fn try_myers_ed_single_scalar(a: &[u8], b: &[u8]) -> Result<usize> {
@@ -34,10 +34,10 @@ pub fn try_myers_ed_single_scalar(a: &[u8], b: &[u8]) -> Result<usize> {
 
     let peq = SingleWordPeq::from_bytes(a);
 
-    Ok(myers_ed_single_scalar_with_peq(peq, b))
+    Ok(myers_ed_single_scalar_with_peq(&peq, b))
 }
 
-pub fn myers_ed_single_scalar_with_peq(peq: SingleWordPeq<usize>, b: &[u8]) -> usize {
+pub fn myers_ed_single_scalar_with_peq(peq: &SingleWordPeq<usize>, b: &[u8]) -> usize {
     // Vertical positive delta bit-vector.
     let mut vp = usize::MAX;
 
