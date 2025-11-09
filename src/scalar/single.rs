@@ -8,7 +8,7 @@ use crate::peq::SingleWordPeq;
 /// # Examples
 ///
 /// ```
-/// # use myers_ed::scalar::myers_ed_single_scalar;
+/// # use myers_ed::scalar::single::myers_ed_single_scalar;
 /// # fn main() {
 /// let d = myers_ed_single_scalar(b"ACCC", b"ACCT");
 ///
