@@ -21,17 +21,17 @@ pub trait Word {
     fn bit_or(self, rhs: Self) -> Self;
 }
 
-impl Word for usize {
-    const ZERO: usize = 0;
-    const ONE: usize = 1;
+impl Word for u64 {
+    const ZERO: u64 = 0;
+    const ONE: u64 = 1;
 
     #[inline(always)]
-    unsafe fn bit_at_unchecked(i: usize) -> usize {
-        1_usize.unchecked_shl(i as u32)
+    unsafe fn bit_at_unchecked(i: usize) -> u64 {
+        1_u64 << i
     }
 
     #[inline(always)]
-    fn bit_or(self, rhs: usize) -> usize {
+    fn bit_or(self, rhs: u64) -> u64 {
         self | rhs
     }
 }
@@ -46,11 +46,11 @@ impl Word for __m512i {
 
     #[inline(always)]
     unsafe fn bit_at_unchecked(i: usize) -> __m512i {
-        // Mask for lane containing bit to set. 1_u8 << (i / usize::BITS).
-        let k = 1_u8.unchecked_shl(i.unchecked_shr(usize::BITS.trailing_zeros()) as u32);
+        // Mask for lane containing bit to set.
+        let k = 1_u8 << (i >> 6);
 
-        // Set bit inside selected lane. 1_i64 << (i % usize::BITS).
-        let a = 1_i64.unchecked_shl(i.bitand(usize::BITS.sub(1) as usize) as u32);
+        // Set bit inside selected lane.
+        let a = 1_i64 << (i & 63);
 
         _mm512_mask_set1_epi64(Self::ZERO, k, a)
     }
