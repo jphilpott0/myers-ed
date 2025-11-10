@@ -63,7 +63,7 @@ pub fn _mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(a: __m512i, b: __
             // Broadcast carry bits across lanes. Right shift mask to propagate bits up along lanes.
             //
             // Safety: `rhs = 1 < 8 * std::mem::size_of::<u8>()`.
-            let cb = unsafe { _mm512_maskz_set1_epi64(cm.unchecked_shr(1), 1_i64) };
+            let cb = unsafe { _mm512_maskz_set1_epi64(cm >> 1, 1_i64) };
 
             // Save current pre-carry lanes.
             a = s;
@@ -107,7 +107,7 @@ pub fn _mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(a: __m512i, b: __
             // Broadcast carry bits across lanes. Right shift mask to propagate bits up along lanes.
             //
             // Safety: `rhs = 1 < 8 * std::mem::size_of::<u8>()`.
-            let cb = unsafe { _mm512_maskz_set1_epi64(cm.unchecked_shr(1), 1_i64) };
+            let cb = unsafe { _mm512_maskz_set1_epi64(cm >> 1, 1_i64) };
 
             // Save current pre-carry lanes.
             a = s;
@@ -231,7 +231,7 @@ where
 #[inline(always)]
 pub unsafe fn _mm512_mask_upto_si512_custom(i: usize) -> __m512i {
     // Lane containing intended MSB. 1_u8 << (i / 64).
-    let lane = 1_u8.unchecked_shl(i.unchecked_shr(6) as u32);
+    let lane = 1_u8 << (i >> 6);
 
     // Mask of lanes before lane that contains intended MSB. max(1_u8 << (i / 64) - 1_u8, 0).
     let low_lanes = lane.saturating_sub(1);
@@ -240,7 +240,7 @@ pub unsafe fn _mm512_mask_upto_si512_custom(i: usize) -> __m512i {
     let m = _mm512_mask_set1_epi64(__m512i::ZERO, low_lanes, -1_i64);
 
     // Get intended MSB + 1, subtract 1 to fill intended MSB:LSB with set bits. 1_i64 << (i % 64) - 1.
-    let bits = 1_i64.unchecked_shl(i.bitand(63) as u32).unchecked_sub(1);
+    let bits = (1_i64 << (i & 63)).unchecked_sub(1);
 
     // Set dst[i:((i / 64) * 64)] = 1.
     _mm512_mask_set1_epi64(m, lane, bits)

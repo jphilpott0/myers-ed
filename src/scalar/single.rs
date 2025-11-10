@@ -66,7 +66,7 @@ pub fn myers_ed_single_scalar_with_peq(peq: &SingleWordPeq<u64>, b: &[u8]) -> us
     }
 
     // Compute mask to get only real bits.
-    let m = 1_u64 << (peq.len()).wrapping_sub(1);
+    let m = (1_u64 << peq.len()).wrapping_sub(1);
 
     // Compute final edit distance.
     let vp_popcnt = (vp & m).count_ones();
