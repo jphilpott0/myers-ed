@@ -1,7 +1,6 @@
 //! Custom AVX-512 "helper intrinsics" for supporting the Myers algorithm implementation.
 
 use core::arch::x86_64::*;
-use core::ops::BitAnd;
 
 use crate::peq::Word;
 
@@ -61,9 +60,7 @@ pub fn _mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(a: __m512i, b: __
             cm = _mm512_cmp_epu64_mask(s, a, _MM_CMPINT_LT);
 
             // Broadcast carry bits across lanes. Right shift mask to propagate bits up along lanes.
-            //
-            // Safety: `rhs = 1 < 8 * std::mem::size_of::<u8>()`.
-            let cb = unsafe { _mm512_maskz_set1_epi64(cm >> 1, 1_i64) };
+            let cb = _mm512_maskz_set1_epi64(cm >> 1, 1_i64);
 
             // Save current pre-carry lanes.
             a = s;
@@ -105,9 +102,7 @@ pub fn _mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(a: __m512i, b: __
             // propagate, then continue propagating.
 
             // Broadcast carry bits across lanes. Right shift mask to propagate bits up along lanes.
-            //
-            // Safety: `rhs = 1 < 8 * std::mem::size_of::<u8>()`.
-            let cb = unsafe { _mm512_maskz_set1_epi64(cm >> 1, 1_i64) };
+            let cb = _mm512_maskz_set1_epi64(cm >> 1, 1_i64);
 
             // Save current pre-carry lanes.
             a = s;

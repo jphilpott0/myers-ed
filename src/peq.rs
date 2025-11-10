@@ -1,6 +1,6 @@
 use core::arch::x86_64::*;
 use core::mem::size_of;
-use core::ops::{BitAnd, Index, Sub};
+use core::ops::Index;
 
 pub trait Word {
     /// This word entirely zeroed.
