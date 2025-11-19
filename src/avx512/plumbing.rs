@@ -46,15 +46,14 @@ pub fn _mm512_add_si512_custom<const LIKELY_CARRY_ROUNDS: u32>(a: __m512i, b: __
         // Add a and b together as 64-bit lanes without carry between.
         let mut s = _mm512_add_epi64(a, b);
 
-        // Initalise carry mask. Since 0..=LIKELY_CARRY_ROUNDS must always run once, we
-        // will always populate the carry mask with some data.
+        // Initalise carry mask.
         #[allow(unused_assignments)]
         let mut cm = 0;
 
         // Perform `LIKELY_CARRY_ROUNDS` of unchecked non-branching carry rounds. When
         // `LIKELY_CARRY_ROUNDS` is small, llvm can unroll this loop since its a `const`
         // generic and known at compile-time. If `LIKELY_CARRY_ROUNDS = 0`, then llvm
-        // will exclude the loop entirely.
+        // will omit the loop entirely.
         for _ in 0..LIKELY_CARRY_ROUNDS {
             // Mask of carry bits. If s < a, then we overflowed and need a carry bit.
             cm = _mm512_cmp_epu64_mask(s, a, _MM_CMPINT_LT);

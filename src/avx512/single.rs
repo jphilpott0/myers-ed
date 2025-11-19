@@ -1,7 +1,3 @@
-#![cfg(feature = "avx512")]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, doc(cfg(feature = "avx512")))]
-
 use core::arch::x86_64::*;
 
 use anyhow::{Result, anyhow};
