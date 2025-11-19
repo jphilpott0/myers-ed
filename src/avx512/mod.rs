@@ -1,3 +1,7 @@
+#![cfg(feature = "avx512")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, doc(cfg(feature = "avx512")))]
+
 use crate::assert_target_features;
 
 pub mod multi;
