@@ -32,7 +32,7 @@ __m512i one_shifted     = _mm512_load_epi64(one_shifted_arr);
 // Standard Mainloop:
 //
 // Current Stats:
-// - Lat: 9/14 + (Intel/AMD).
+// - Lat: 9/14c + (Intel/AMD). Might actually be port-bound and 1/2c slower.
 // - CPI: 21.
 
 // mid algorithm iteration. we may assume that a previous iteration has been
