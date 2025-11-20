@@ -32,7 +32,7 @@ __m512i one_shifted     = _mm512_load_epi64(one_shifted_arr);
 // Standard Mainloop:
 //
 // Current Stats:
-// - Lat: 9/14c + (Intel/AMD). Might actually be port-bound and 1/2c slower.
+// - Lat: 9/14c + (Intel/AMD). Might actually be port-bound and 1/2c slower in practice.
 // - CPI: 21.
 
 // mid algorithm iteration. we may assume that a previous iteration has been
@@ -44,15 +44,15 @@ unsigned char failed;
 __m512i eq;
 
 for (i = n; i < b_len; i++) {
-    __m512i vpeq_and  = _mm512_and_si512(eq, vp); // hidden (1c; prev iter). eq & vp.
-    __m512i xh        = _mm512_or_si512(eq, vn); // hidden (1c). eq | vn.
-    __m512i vpeq_or   = _mm512_or_si512(eq, vp); // hidden (1c). eq | vp.
-    __m512i vpeq_nand = _mm512_andnot_si512(eq, vp); // hidden (1c). ~eq & vp.
-
-    vp                  = _mm512_sub_epi32(vp, carry_partial); // 1c. vp + carry bits.
+    __m512i vpeq_and    = _mm512_and_si512(eq, vp); // hidden (1c; prev iter). eq & vp.
+    __m512i xh          = _mm512_or_si512(eq, vn); // hidden (1c). eq | vn.
     __m512i eq_rshifted = _mm512_srli_epi32(eq, 1); // hidden (1c). eq >> 1.
-    __m512i xh_rshifted = _mm512_srli_epi32(xh, 1); // hidden (1c). xh >> 1.
     __m512i _eq         = _mm512_load_si512(&peq[x]); // hidden (5c). get next peq.
+
+    __m512i vpeq_or     = _mm512_or_si512(eq, vp); // hidden (1c). eq | vp.
+    __m512i xh_rshifted = _mm512_srli_epi32(xh, 1); // hidden (1c). xh >> 1.
+    __m512i vpeq_nand   = _mm512_andnot_si512(eq, vp); // hidden (1c). ~eq & vp.
+    vp                  = _mm512_sub_epi32(vp, carry_partial); // 1c. vp + carry bits.
 
     __m512i sum     = _mm512_add_epi32(vpeq_and, vp); // 1c.
     __m512i vpeqreq = _mm512_ternarylogic_epi32(vp, eq, eq_rshifted, 0x20); // hidden (1c). vp & ~eq & eq_rshifted.
@@ -87,5 +87,5 @@ for (i = n; i < b_len; i++) {
 
     vp = _mm512_ternarylogic_epi32(hn_lshifted, xh, hp_lshifted, 0xF1); // hidden (1c). hn_lshifted | ~(xh | hp_lshifted).
     vn = _mm512_and_si512(hp, xh); // hidden (1c). hp & xh.
-    unsigned char failed = _ktestz_mask16_u8(eq_check, vp_check);
+    unsigned char failed = _ktestz_mask16_u8(eq_check, vp_check); // hidden (3c).
 }
